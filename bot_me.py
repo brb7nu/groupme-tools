@@ -19,58 +19,76 @@ def get_group_by_name(group_list, name):
 
 if __name__ == "__main__":
 
-    data = {}
-    data['group'] = None
+    try:
+        print("Let's create bots in GroupMe.")
+        print("Press CTRL-C at any time to exit.")
 
-    # get and show user's groups
-    groups = groupy.Group.list()
-    print("Your groups:")
-    for g in groups:
-        print(g.name)
-    print()
+        input("Press enter to continue.")
+        print("Loading your GroupMe data...")
 
-    while True:
-        print("Enter a group to act as a bot inside: ")
-        group_name = input(">>> ")
+        data = {}
+        data['group'] = None
 
-        if not group_name:
-            print("[ERROR] You must specify a valid group.")
-            continue
+        # get and show user's groups
+        groups = groupy.Group.list()
+        print("Your groups:")
+        for g in groups:
+            print(g.name)
+        print()
 
-        # check if input matches a group
-        data['group'] = get_group_by_name(groups, group_name)
+        while True:
+            print("Enter a group to act as a bot inside: ")
+            group_name = input(">>> ")
 
-        if data['group'] is not None:
-            break
-        else:
-            print("[ERROR] You are not a member of group '" + group_name + "'.")
+            if not group_name:
+                print("[ERROR] You must specify a valid group.")
+                continue
 
-    print("Successfully selected group '" + group_name + "'.")
+            # check if input matches a group
+            data['group'] = get_group_by_name(groups, group_name)
 
-    callback_url = "https://example.com/oath_callback" + str(random.randrange(0, 1000000000000000000000000))
-    data['bot_picture'] = None
+            if data['group'] is not None:
+                break
+            else:
+                print("[ERROR] You are not a member of group '" + group_name + "'.")
 
-    print("Enter bot's display name: ")
-    bot_name = input(">>> ")
+        print("Successfully selected group '" + group_name + "'.")
 
-    while True:
-        try:
-            data['bot'] = groupy.Bot.create(bot_name, data['group'], avatar_url=data['bot_picture'], callback_url=callback_url)
+        # GroupMe doesn't let you register bots with the same callback URL, so append random numbers to end
+        callback_url = "https://example.com/oath_callback" + str(random.randrange(0, 1000000000000000000000000))
 
-            print("Successfully created bot '" + bot_name + "'.")
+        # Initialize bot picture to none. Update this if the entered bot name matches someone already in the group
+        data['bot_picture'] = None
 
-            print("Now posting as bot.")
-            while True:
-                # post as this bot in the group
-                text = input(">>> ")
-                data['bot'].post(text)
+        print("Enter bot's display name: ")
+        bot_name = input(">>> ")
 
-        except groupy.api.errors.ApiError as e:
-            if 'Name already taken by group member' in e.args[0]['errors']:
+        while True:
+            try:
+                data['bot'] = groupy.Bot.create(bot_name, data['group'], avatar_url=data['bot_picture'], callback_url=callback_url)
 
-                data['bot_picture'] = get_member_by_name(data['group'].members(), bot_name).image_url
+                print("Successfully created bot '" + bot_name + "'.")
 
-                bot_name += ' '
+                print("Now posting as bot.")
+                while True:
+                    # post as this bot in the group
+                    text = input(">>> ")
+                    data['bot'].post(text)
 
-            if 'Callback url callback url  already registered for group' in e.args[0]['errors']:
-                callback_url += '2'
+            except groupy.api.errors.ApiError as e:
+                if 'Name already taken by group member' in e.args[0]['errors']:
+
+                    data['bot_picture'] = get_member_by_name(data['group'].members(), bot_name).image_url
+
+                    bot_name += ' '
+
+                if 'Callback url callback url  already registered for group' in e.args[0]['errors']:
+                    callback_url += '2'
+
+            except KeyboardInterrupt as k:
+                print()
+                print("You can resume posting as your bot at https://dev.groupme.com/bots.")
+                exit()
+    except KeyboardInterrupt as k:
+        print()
+        exit()
